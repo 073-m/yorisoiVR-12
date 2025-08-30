@@ -1,0 +1,143 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>YORISOI_12</title>
+    <script src="https://aframe.io/releases/1.4.0/aframe.min.js"></script>
+    <script>
+        // 星空コンポーネント
+        AFRAME.registerComponent('starry-sky', {
+            schema: {
+                count: {type: 'number', default: 1000},
+                radius: {type: 'number', default: 90}
+            },
+            init: function () {
+                const el = this.el;
+                const data = this.data;
+                
+                for (let i = 0; i < data.count; i++) {
+                    const star = document.createElement('a-sphere');
+                    star.setAttribute('radius', Math.random() * 0.05 + 0.02);
+                    star.setAttribute('color', '#FFFFFF');
+                    star.setAttribute('material', 'shader: flat; emissive: #FFFFFF; emissiveIntensity: 0.8;');
+
+                    const u = Math.random();
+                    const v = Math.random();
+                    const theta = 2 * Math.PI * u;
+                    const phi = Math.acos(2 * v - 1);
+                    const x = data.radius * Math.sin(phi) * Math.cos(theta);
+                    const y = data.radius * Math.sin(phi) * Math.sin(theta);
+                    const z = data.radius * Math.cos(phi);
+                    
+                    star.setAttribute('position', `${x} ${y} ${z}`);
+                    el.appendChild(star);
+                }
+            }
+        });
+
+        // 雨のコンポーネント
+        AFRAME.registerComponent('rain', {
+            schema: {
+                count: {type: 'number', default: 1500},
+                area: {type: 'number', default: 30},
+                roomDepth: {type: 'number', default: 10}
+            },
+            init: function () {
+                const el = this.el;
+                const data = this.data;
+                const area = data.area;
+                const roomDepth = data.roomDepth;
+                
+                for (let i = 0; i < data.count; i++) {
+                    const rainDrop = document.createElement('a-box');
+                    rainDrop.setAttribute('color', '#ADD8E6');
+                    rainDrop.setAttribute('width', 0.01);
+                    rainDrop.setAttribute('height', 0.15);
+                    rainDrop.setAttribute('depth', 0.01);
+                    
+                    let x, y, z;
+
+                    do {
+                        x = Math.random() * area - area / 2;
+                        z = Math.random() * area - area / 2;
+                    } while (x > -5 && x < 5 && z > -5 - roomDepth / 2 && z < -5 + roomDepth / 2);
+                    
+                    y = Math.random() * 10 + 10;
+                    
+                    rainDrop.setAttribute('position', `${x} ${y} ${z}`);
+                    rainDrop.setAttribute('animation__fall', {
+                        property: 'position',
+                        to: `${x} 0 ${z}`,
+                        dur: Math.random() * 1500 + 1500,
+                        loop: true,
+                        easing: 'linear'
+                    });
+                    el.appendChild(rainDrop);
+                }
+            }
+        });
+
+        // 時計コンポーネント
+        AFRAME.registerComponent('clock', {
+            tick: function () {
+                const el = this.el;
+                const now = new Date();
+                const jst_time = now.toLocaleString("ja-JP", {
+                    timeZone: "Asia/Tokyo",
+                    hour: '2-digit',
+                    minute: '2-digit'
+                });
+                el.setAttribute('value', jst_time);
+            }
+        });
+
+        // 雨音再生コンポーネント
+        AFRAME.registerComponent('audio-control', {
+            init: function () {
+                const audioEl = document.getElementById('rain-audio');
+                audioEl.volume = 0.5; // 音量を調整
+                
+                // VRモードに入ったら自動再生
+                this.el.sceneEl.addEventListener('enter-vr', function () {
+                    audioEl.play();
+                });
+            }
+        });
+    </script>
+</head>
+<body>
+    <audio id="rain-audio" src="./KODOKU/rain.mp3" loop></audio>
+
+    <a-scene audio-control>
+        <a-entity camera look-controls wasd-controls position="0 1.6 0"></a-entity>
+
+        <a-light id="room-light" type="ambient" color="#fff" intensity="0.3"></a-light>
+        <a-light type="point" color="#ffc" intensity="1" position="-1 0.1 -2.5"></a-light>
+        
+        <a-sky color="#223" material="shader: flat;"></a-sky>
+        <a-entity starry-sky="count: 1000; radius: 90;"></a-entity>
+        
+        <a-entity rain="count: 1500; area: 30; roomDepth: 10;"></a-entity>
+
+        <a-box position="0 0 -5" width="10" height="0.1" depth="10" color="#C2B7A1"></a-box>
+        
+        <a-box position="0 3 -5" width="10" height="0.1" depth="10" 
+               material="color: #ADD8E6; opacity: 0.3; transparent: true;"></a-box>
+        
+        <a-box position="0 1.5 -10" width="10" height="3" depth="0.1" color="#A09585" material="side: back;"></a-box>
+        <a-box position="-5 1.5 -5" width="0.1" height="3" depth="10" color="#A09585" material="side: back;"></a-box>
+        <a-box position="5 1.5 -5" width="0.1" height="3" depth="10" color="#A09585" material="side: back;"></a-box>
+        <a-box position="0 1.5 0" width="10" height="3" depth="0.1" color="#A09585" material="side: back;"></a-box>
+        
+        <a-box position="2 1.5 -9.9" width="4" height="2" depth="0.1" material="opacity:0.2; color: #ADD8E6"></a-box>
+        
+        <a-box position="0 0.2 -3" width="1.5" height="0.3" depth="2.5" color="#8b4513"></a-box>
+        <a-box position="0 0.4 -3.8" width="1.5" height="0.2" depth="0.5" color="#c0c0c0"></a-box>
+        
+        <a-sphere id="lamp" position="-1 0.1 -2.5" radius="0.15" color="#FFFF00"></a-sphere>
+        
+        <a-text id="clock-text" value="00:00" position="-1.5 1.8 -3" width="1" color="#fff" clock></a-text>
+
+        <a-plane position="0 -0.05 0" rotation="-90 0 0" width="100" height="100" color="#4a6741"></a-plane>
+    </a-scene>
+</body>
+</html>
